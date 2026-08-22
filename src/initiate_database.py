@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 import sys
 import sqlite3
 from tqdm import tqdm
@@ -6,35 +8,17 @@ from tqdm import tqdm
 sys.path.append('../')
 
 # VARIABLES
-DB_FILE = "/Users/jaeahkim/Library/CloudStorage/GoogleDrive-jaeah@umich.edu/My Drive/Personal Projects/FitnessRecommender/data/raw/mHealth.db"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DB_FILE_PATH = PROJECT_ROOT / "db_file_path.txt"
+with open(DB_FILE_PATH, "r") as f:
+    DB_FILE = f.read().strip()
 
-COLUMN_SPECS = [
-    ("subject_id", "INTEGER NOT NULL"),
-    ("x_accel_chest", "REAL NOT NULL"),
-    ("y_accel_chest", "REAL NOT NULL"),
-    ("z_accel_chest", "REAL NOT NULL"),
-    ("ecg_l1", "REAL NOT NULL"),
-    ("ecg_l2", "REAL NOT NULL"),
-    ("x_accel_l_ankle", "REAL NOT NULL"),
-    ("y_accel_l_ankle", "REAL NOT NULL"),
-    ("z_accel_l_ankle", "REAL NOT NULL"),
-    ("x_gyro_l_ankle", "REAL NOT NULL"),
-    ("y_gyro_l_ankle", "REAL NOT NULL"),
-    ("z_gyro_l_ankle", "REAL NOT NULL"),
-    ("x_magnet_l_ankle", "REAL NOT NULL"),
-    ("y_magnet_l_ankle", "REAL NOT NULL"),
-    ("z_magnet_l_ankle", "REAL NOT NULL"),
-    ("x_accel_r_arm", "REAL NOT NULL"),
-    ("y_accel_r_arm", "REAL NOT NULL"),
-    ("z_accel_r_arm", "REAL NOT NULL"),
-    ("x_gyro_r_arm", "REAL NOT NULL"),
-    ("y_gyro_r_arm", "REAL NOT NULL"),
-    ("z_gyro_r_arm", "REAL NOT NULL"),
-    ("x_magnet_r_arm", "REAL NOT NULL"),
-    ("y_magnet_r_arm", "REAL NOT NULL"),
-    ("z_magnet_r_arm", "REAL NOT NULL"),
-    ("activity_label", "INTEGER NOT NULL")
-]
+COLUMN_SPEC_FILE = PROJECT_ROOT / "column_specs.json"
+with open(COLUMN_SPEC_FILE, "r") as f:
+    COLUMN_SPECS = json.load(f)
+RAW_COLUMN_SPECS = COLUMN_SPECS["raw"]
+PROCESSED_COLUMN_SPECS = COLUMN_SPECS["processed"]
+
 
 # List of mHealth log files to process
 log_files = []
@@ -46,6 +30,7 @@ for i in range(1,11):
 # FUNCTIONS
 def get_connection(db_file = DB_FILE):
     """Establish a connection to the SQLite database."""
+    print(f"Connecting to database...")
     conn = sqlite3.connect(db_file)
     return conn
 
@@ -94,6 +79,8 @@ def execute_from_dataframe(
     Output: 
         None; inserts data into the specified database table.
     """
+    conn = get_connection()
+    cursor = conn.cursor()
     batch = []
 
     for _, row in df.iterrows():
@@ -134,6 +121,8 @@ def execute_from_logs(
     Output: 
         None; inserts data into the specified database table.
     """
+    conn = get_connection()
+    cursor = conn.cursor()
     batch = []
 
     for sbj_id, log_file in tqdm(enumerate(logs)):
@@ -180,8 +169,6 @@ def populate_database(
     Output: 
         None; inserts data into the specified database table.
     """
-    conn = get_connection()
-    cursor = conn.cursor()
 
     # Process column names from list
     column_definitions = [f"{col} {dtype}" for col, dtype in column_specs]
@@ -217,12 +204,4 @@ def populate_database(
             raise
     else:
         raise ValueError("Invalid source specified. Use 'logs' or 'dataframe' for from_source.")
-
-
-
-
-if __name__ == "__main__":
-    conn = get_connection()
-    cursor = conn.cursor()
-    
 
