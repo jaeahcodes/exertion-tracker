@@ -179,3 +179,19 @@ def calculate_sma(window_df, sensor):
     sma = window_df[cols].abs().sum(axis = 1).mean()
 
     return sma
+
+def calculate_subject_baselines(df, rest_labels = [1, 2, 3]):
+    baselines = {}
+
+    for subject_id in df["subject_id"].unique():
+        rest_data = df[
+            (df["subject_id"] == subject_id) & 
+            (df["activity_label"].isin(rest_labels))
+        ]
+
+        if not rest_data.empty:
+            baselines[subject_id] = rest_data["bpm_l1"].quantile(0.1)
+        else:
+            baselines[subject_id] = df["bpm_l1"].quantile(0.1)
+    
+    return baselines
