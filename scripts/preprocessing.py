@@ -19,6 +19,7 @@ dbf.populate_database("sensor_data", dbf.RAW_COLUMN_SPECS, logs = dbf.LOG_FILES,
 # 3. Process data (from DataFrame)
 df = pd.read_sql("SELECT * FROM sensor_data ORDER BY subject_id ASC", conn)
 df_filtered = hf.preprocess_full_df(df)
+df_filtered.to_csv("data/processed_data.csv")
 
 # 4. Populate database from processed DataFrame
 dbf.populate_database("processed_data", dbf.PROCESSED_COLUMN_SPECS, df = df_filtered, batch_size = 1000)
@@ -26,4 +27,3 @@ dbf.populate_database("processed_data", dbf.PROCESSED_COLUMN_SPECS, df = df_filt
 # TODO: 5. Create (and save) visualizations
 
 
-# TODO: 6. Train cascade
