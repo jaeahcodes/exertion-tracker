@@ -195,3 +195,125 @@ def calculate_subject_baselines(df, rest_labels = [1, 2, 3]):
             baselines[subject_id] = df["bpm_l1"].quantile(0.1)
     
     return baselines
+
+def create_feature_df(df, sma_threshold = 25, hr_delta_threshold = 25):
+    subject_baselines = calculate_subject_baselines(df)
+    feature_rows = []
+
+    for window in window_generator(df):
+        subject = window["subject_id"].iloc[0]
+        original_label = window["activity_label"].iloc[0]
+        avg_l1_bpm = window["bpm_l1"].mean()
+        avg_l2_bpm = window["bpm_l2"].mean()
+        avg_bpm = (avg_l1_bpm + avg_l2_bpm) / 2
+        hr_elevation = avg_bpm - subject_baselines.get(subject, 70)
+
+        motion_sma = calculate_sma(window, "accel_l_ankle")
+
+        chest_accel_ta = calculate_tilt(window, "accel_chest")
+        ankle_accel_ta = calculate_tilt(window, "accel_l_ankle")
+        arm_accel_ta = calculate_tilt(window, "accel_r_arm")
+
+        chest_accel_sma = calculate_sma(window, "accel_chest")
+        ankle_accel_sma = motion_sma
+        arm_accel_sma = calculate_sma(window, "accel_r_arm")
+
+        ankle_gyro_sma = calculate_sma(window, "gyro_l_ankle")
+        arm_gyro_sma = calculate_sma(window, "gyro_r_arm")
+
+        chest_x_ar_features = extract_ar_coeffs(window, "x_accel_chest_filt")
+        chest_y_ar_features = extract_ar_coeffs(window, "y_accel_chest_filt")
+        chest_z_ar_features = extract_ar_coeffs(window, "z_accel_chest_filt")
+        ankle_x_ar_features = extract_ar_coeffs(window, "x_accel_l_ankle_filt")
+        ankle_y_ar_features = extract_ar_coeffs(window, "y_accel_l_ankle_filt")
+        ankle_z_ar_features = extract_ar_coeffs(window, "z_accel_l_ankle_filt")
+        arm_x_ar_features = extract_ar_coeffs(window, "x_accel_r_arm_filt")
+        arm_y_ar_features = extract_ar_coeffs(window, "y_accel_r_arm_filt")
+        arm_z_ar_features = extract_ar_coeffs(window, "z_accel_r_arm_filt")
+
+
+        if original_label == 0:
+            is_motion_high = motion_sma > sma_threshold
+            is_hr_high = hr_elevation > hr_delta_threshold
+
+            if not is_motion_high and not is_hr_high:
+                new_label = 0 # Baseline
+            elif is_motion_high and not is_hr_high:
+                new_label = 101 # Sensor Noise
+            elif not is_motion_high and is_hr_high:
+                new_label = 102 # Recovery
+            elif is_motion_high and is_hr_high:
+                new_label = 103 # Active Exertion
+        
+        else:
+            new_label = original_label
+
+        features = {
+            # Identifiers
+            "subject_id": subject,
+            "label": new_label,
+
+            # Physiology 
+            "avg_bpm": avg_bpm,
+            "hr_elevation": hr_elevation,
+
+            # Tilt
+            "chest_accel_ta": chest_accel_ta,
+            "ankle_accel_ta": ankle_accel_ta,
+            "arm_accel_ta": arm_accel_ta,
+
+            # AR Coefficients (only on accelerator measurements)
+            "ar_1": chest_x_ar_features.iloc[0],
+            "ar_2": chest_x_ar_features.iloc[1],
+            "ar_3": chest_x_ar_features.iloc[2],
+            "ar_4": chest_y_ar_features.iloc[0],
+            "ar_5": chest_y_ar_features.iloc[1],
+            "ar_6": chest_y_ar_features.iloc[2],
+            "ar_7": chest_z_ar_features.iloc[0],
+            "ar_8": chest_z_ar_features.iloc[1],
+            "ar_9": chest_z_ar_features.iloc[2],
+
+            "ar_10": ankle_x_ar_features.iloc[0],
+            "ar_11": ankle_x_ar_features.iloc[1],
+            "ar_12": ankle_x_ar_features.iloc[2],
+            "ar_13": ankle_y_ar_features.iloc[0],
+            "ar_14": ankle_y_ar_features.iloc[1],
+            "ar_15": ankle_y_ar_features.iloc[2],
+            "ar_16": ankle_z_ar_features.iloc[0],
+            "ar_17": ankle_z_ar_features.iloc[1],
+            "ar_18": ankle_z_ar_features.iloc[2],
+
+            "ar_19": arm_x_ar_features.iloc[0],
+            "ar_20": arm_x_ar_features.iloc[1],
+            "ar_21": arm_x_ar_features.iloc[2],
+            "ar_22": arm_y_ar_features.iloc[0],
+            "ar_23": arm_y_ar_features.iloc[1],
+            "ar_24": arm_y_ar_features.iloc[2],
+            "ar_25": arm_z_ar_features.iloc[0],
+            "ar_26": arm_z_ar_features.iloc[1],
+            "ar_27": arm_z_ar_features.iloc[2],
+
+            # Intensity (SMA)
+            "chest_accel_sma": chest_accel_sma,
+            "ankle_accel_sma": ankle_accel_sma,
+            "arm_accel_sma": arm_accel_sma,
+
+            "ankle_gyro_sma":  ankle_gyro_sma,
+            "arm_gyro_sma": arm_gyro_sma,
+
+            # Variance
+            "chest_x_accel_std": window["x_accel_chest_filt"].std(),
+            "chest_y_accel_std": window["y_accel_chest_filt"].std(),
+            "chest_z_accel_std": window["z_accel_chest_filt"].std(),
+
+            "ankle_x_accel_std": window["x_accel_l_ankle_filt"].std(),
+            "ankle_y_accel_std": window["y_accel_l_ankle_filt"].std(),
+            "ankle_z_accel_std": window["z_accel_l_ankle_filt"].std(),
+
+            "arm_x_accel_std": window["x_accel_r_arm_filt"].std(),
+            "arm_y_accel_std": window["y_accel_r_arm_filt"].std(),
+            "arm_z_accel_std": window["z_accel_r_arm_filt"].std(),
+        }
+
+        feature_rows.append(features)
+    feature_df = pd.DataFrame(feature_rows)
