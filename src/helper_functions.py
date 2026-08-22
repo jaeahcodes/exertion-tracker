@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from scipy.signal import find_peaks, butter, filtfilt
 from statsmodels.tsa.ar_model import AutoReg
 
@@ -316,4 +317,5 @@ def create_feature_df(df, sma_threshold = 25, hr_delta_threshold = 25):
         }
 
         feature_rows.append(features)
-    feature_df = pd.DataFrame(feature_rows)
+
+    return pd.DataFrame(feature_rows)
