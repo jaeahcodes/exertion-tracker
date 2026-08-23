@@ -46,7 +46,7 @@ def initialize_database_table(table_name, column_specs):
     cursor = conn.cursor()
 
     # Automatically map non-id columns to their specified types
-    column_definitions = [f"{col} {dtype}" for col, dtype in column_specs]
+    column_definitions = [f"{col} {dtype}" for col, dtype in column_specs.items()]
 
     # Include primary key at the beginning
     schema = ["id INTEGER PRIMARY KEY AUTOINCREMENT"] + column_definitions
