@@ -34,6 +34,18 @@ def get_connection(db_file = DB_FILE):
     conn = sqlite3.connect(db_file)
     return conn
 
+def make_column_schema(column_spec_dict):
+    """Create column schema for input into database functions.
+    Input:
+        column_spec_dict: Dictionary of format column: dtype.
+    Output:
+        columns_sql: Comma-separated column dtype string."""
+    column_definitions = [f"{col} {dtype}" for col, dtype in column_spec_dict.items()]
+    schema = ["id INTEGER PRIMARY KEY AUTOINCREMENT"] + column_definitions
+    columns_sql = ",       ".join(schema)
+    return columns_sql
+
+
 def initialize_database_table(table_name, column_specs):
     """Create necessary tables in database dynamically if they don't exist.
     Input: 
@@ -45,14 +57,7 @@ def initialize_database_table(table_name, column_specs):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Automatically map non-id columns to their specified types
-    column_definitions = [f"{col} {dtype}" for col, dtype in column_specs.items()]
-
-    # Include primary key at the beginning
-    schema = ["id INTEGER PRIMARY KEY AUTOINCREMENT"] + column_definitions
-
-    # Join into comma-separated column string
-    columns_sql = ",       ".join(schema)
+    columns_sql = make_column_schema(column_specs)
 
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
@@ -169,11 +174,7 @@ def populate_database(
         None; inserts data into the specified database table.
     """
 
-    # Process column names from list
-    column_definitions = [f"{col} {dtype}" for col, dtype in column_specs]
-
-    # Join into comma-separated column string
-    columns_sql = ",       ".join(column_definitions)
+    columns_sql = make_column_schema(column_specs)
 
     length_of_columns = len(column_specs)
 
