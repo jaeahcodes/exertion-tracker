@@ -12,6 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 # 1. Initialize database connection
 conn = dbf.get_connection()
 dbf.initialize_database_table("sensor_data", dbf.RAW_COLUMN_SPECS)
+dbf.initialize_database_table("processed_data", dbf.PROCESSED_COLUMN_SPECS)
+dbf.initialize_database_table()
 
 # 2. Populate database from raw log files
 dbf.populate_database("sensor_data", dbf.RAW_COLUMN_SPECS, logs = dbf.LOG_FILES, batch_size = 1000)
@@ -24,6 +26,7 @@ df_filtered.to_csv("data/processed_data.csv")
 # 4. Populate database from processed DataFrame
 dbf.populate_database("processed_data", dbf.PROCESSED_COLUMN_SPECS, df = df_filtered, batch_size = 1000)
 
-# TODO: 5. Create (and save) visualizations
-
+# 5. Feature extraction and export
+final_df = hf.create_feature_df(df_filtered)
+final_df.to_csv("data/final_data.csv")
 
