@@ -175,9 +175,10 @@ def populate_database(
         None; inserts data into the specified database table.
     """
 
-    columns_sql = make_column_schema(column_specs)
+    columns_dict = make_column_schema(column_specs)
+    columns_sql = ", ".join(columns_dict.keys())
 
-    length_of_columns = len(column_specs)
+    length_of_columns = len(columns_dict.keys())
 
     if logs:
         try:
