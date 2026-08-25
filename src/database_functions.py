@@ -18,6 +18,7 @@ with open(COLUMN_SPEC_FILE, "r") as f:
     COLUMN_SPECS = json.load(f)
 RAW_COLUMN_SPECS = COLUMN_SPECS["raw"]
 PROCESSED_COLUMN_SPECS = COLUMN_SPECS["processed"]
+FINAL_FEATURES = COLUMN_SPECS["features"]
 
 
 # List of mHealth log files to process
