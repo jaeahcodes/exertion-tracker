@@ -51,7 +51,7 @@ def initialize_database_table(table_name, column_specs):
     """Create necessary tables in database dynamically if they don't exist.
     Input: 
         table_name: Name of the table to create.
-        column_specs: List of tuples specifying column names and types.
+        column_specs: Dictionary specifying column names and types.
     Output: 
         None; creates the table in the database if it doesn't exist. 
     """
@@ -175,10 +175,9 @@ def populate_database(
         None; inserts data into the specified database table.
     """
 
-    columns_dict = make_column_schema(column_specs)
-    columns_sql = ", ".join(columns_dict.keys())
+    columns_sql = ", ".join(column_specs.keys())
 
-    length_of_columns = len(columns_dict.keys())
+    length_of_columns = len(column_specs.keys())
 
     if logs:
         try:
