@@ -29,12 +29,12 @@ df_filtered_hr = df_filtered.groupby(["subject_id", "activity_label"]).apply(
     hf.extract_hr_features
 ).reset_index()
 
-df_filtered_hr.to_csv("data/processed_data.csv")
+df_filtered_hr.to_csv("data/processed/processed_data.csv")
 
 # 4. Populate database from processed DataFrame
 dbf.populate_database("processed_data", dbf.PROCESSED_COLUMN_SPECS, df = df_filtered_hr, batch_size = 1000)
 
 # 5. Feature extraction and export
 final_df = hf.create_feature_df(df_filtered_hr)
-final_df.to_csv("data/final_data.csv")
+final_df.to_csv("data/processed/final_data.csv")
 
