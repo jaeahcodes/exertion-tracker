@@ -40,24 +40,24 @@ def apply_butterworth(data, filter_type, fc, fs = 50):
     y = filtfilt(b, a, data)
     return y
 
-def preprocess_full_df(df, fs = 50):
+def preprocess_full_df(ref_df, fs = 50):
     """
     Processes subject by subject to prevent signal bleeding between subjects.
     """
     for sensor, specs in filter_specs.items():
-        cols = [col for col in df.columns if sensor in col]
+        cols = [col for col in ref_df.columns if sensor in col]
         for col in cols: 
-            filtered_signal = apply_butterworth(df[col], specs["type"], specs["fc"], fs)
+            filtered_signal = apply_butterworth(ref_df[col], specs["type"], specs["fc"], fs)
 
             if "ecg" in col:
                 mean = filtered_signal.mean()
                 std = filtered_signal.std()
 
-                df[f"{col}_filt"] = filtered_signal / np.max(np.abs(filtered_signal))
+                ref_df[f"{col}_filt"] = filtered_signal / np.max(np.abs(filtered_signal))
             else:
-                df[f"{col}_filt"] = filtered_signal
+                ref_df[f"{col}_filt"] = filtered_signal
     
-    return df
+    return ref_df
 
 def window_generator(df, window_size = 250, step_size = 125):
     """
@@ -197,11 +197,11 @@ def calculate_subject_baselines(df, rest_labels = [1, 2, 3]):
     
     return baselines
 
-def create_feature_df(df, sma_threshold = 25, hr_delta_threshold = 25):
-    subject_baselines = calculate_subject_baselines(df)
+def create_feature_df(df_hr_extracted, sma_threshold = 25, hr_delta_threshold = 25):
+    subject_baselines = calculate_subject_baselines(df_hr_extracted)
     feature_rows = []
 
-    for window in window_generator(df):
+    for window in window_generator(df_hr_extracted):
         subject = window["subject_id"].iloc[0]
         original_label = window["activity_label"].iloc[0]
         avg_l1_bpm = window["bpm_l1"].mean()
@@ -242,9 +242,9 @@ def create_feature_df(df, sma_threshold = 25, hr_delta_threshold = 25):
             elif is_motion_high and not is_hr_high:
                 new_label = 101 # Sensor Noise
             elif not is_motion_high and is_hr_high:
-                new_label = 102 # Recovery
+                new_label = 13 # Recovery
             elif is_motion_high and is_hr_high:
-                new_label = 103 # Active Exertion
+                new_label = 14 # Active Exertion
         
         else:
             new_label = original_label

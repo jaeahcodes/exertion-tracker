@@ -191,7 +191,7 @@ def populate_database(
         except Exception as e:
             print(f"Error occurred while populating database from logs: {e}")
             raise
-    elif df:
+    elif df is not None:
         try:
             execute_from_dataframe(
                 df,
